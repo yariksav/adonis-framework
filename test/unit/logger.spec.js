@@ -320,17 +320,54 @@ test.group('Logger | Facade', (group) => {
     assert.throw(fn, 'E_INVALID_LOGGER_DRIVER: Logger driver foo does not exists')
   })
 
-  test('use console transport when no transport is defined', (assert, done) => {
+  test('throw exception when no transport is defined', (assert) => {
     const config = new Config()
     config.set('app.logger', {
     })
 
     const logger = new LoggerFacade(config)
-    const inspect = stdout.inspect()
+    const fn = () => logger.debug('')
+    assert.throw(fn, 'E_MISSING_CONFIG: logger.transport is not defined inside config/app.js file')
+  })
 
-    logger.info('hello', () => {
+  test('access loglevels from facade', (assert) => {
+    const config = new Config()
+    config.set('app.logger', {
+      transport: 'file',
+      file: {
+        driver: 'file'
+      }
+    })
+
+    const logger = new LoggerFacade(config)
+    assert.deepEqual(logger.levels, {
+      alert: 1,
+      crit: 2,
+      debug: 7,
+      emerg: 0,
+      error: 3,
+      info: 6,
+      notice: 5,
+      warning: 4
+    })
+  })
+
+  test('update log level from facade', (assert, done) => {
+    const config = new Config()
+    config.set('app.logger', {
+      transport: 'console',
+      console: {
+        driver: 'console'
+      }
+    })
+
+    const logger = new LoggerFacade(config)
+    const inspect = stderr.inspect()
+
+    logger.level = 'debug'
+    logger.debug('foo', function () {
       inspect.restore()
-      assert.include(inspect.output[0], 'hello')
+      assert.include(inspect.output[0], 'foo')
       done()
     })
   })
